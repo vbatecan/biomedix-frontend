@@ -1,211 +1,327 @@
-<p-toast/>
-<div class="kiosk-container">
+<p-toast />
+<div class="flex flex-col h-screen bg-gray-50 overflow-hidden font-sans text-gray-800">
   <!-- Header with authentication status -->
-  <header class="kiosk-header">
-    <div class="auth-status">
-      <div class="auth-indicator"
-           [class.authenticated]="isUserAuthenticated()"
-           [class.pending]="isProcessing()">
+  <header
+    class="flex justify-between items-center px-8 py-5 bg-white border-b border-gray-200 shadow-sm z-10"
+  >
+    <div class="flex items-center gap-6">
+      <div
+        class="flex items-center gap-3 px-4 py-2 rounded-full border transition-all duration-300"
+        [class.bg-green-50]="isUserAuthenticated()"
+        [class.border-green-200]="isUserAuthenticated()"
+        [class.text-green-700]="isUserAuthenticated()"
+        [class.bg-yellow-50]="isProcessing()"
+        [class.border-yellow-200]="isProcessing()"
+        [class.text-yellow-700]="isProcessing()"
+        [class.bg-gray-100]="!isUserAuthenticated() && !isProcessing()"
+        [class.border-gray-200]="!isUserAuthenticated() && !isProcessing()"
+        [class.text-gray-600]="!isUserAuthenticated() && !isProcessing()"
+      >
         @if (isUserAuthenticated()) {
-          <i class="icon fas fa-check-circle"></i>
+        <i class="fas fa-check-circle text-lg"></i>
         } @else if (isProcessing()) {
-          <i class="icon fas fa-spinner fa-spin"></i>
+        <i class="fas fa-spinner fa-spin text-lg"></i>
         } @else {
-          <i class="icon fas fa-times-circle"></i>
+        <i class="fas fa-times-circle text-lg"></i>
         }
-        <span class="status-text">
-          @if (isUserAuthenticated()) {
-            Authenticated
-          } @else if (isProcessing()) {
-            Processing...
-          } @else {
-            Not Authenticated
-          }
+        <span class="font-medium">
+          @if (isUserAuthenticated()) { Authenticated } @else if (isProcessing()) { Processing... }
+          @else { Not Authenticated }
         </span>
       </div>
       @if (authenticatedUser()) {
-        <div class="user-info">
-          <span class="welcome-text">Welcome, {{ userName() }}</span>
-        </div>
+      <div class="bg-green-50 px-4 py-2 rounded-full border border-green-100">
+        <span class="font-semibold text-green-700">Welcome, {{ userName() }}</span>
+      </div>
       }
     </div>
-    <div class="system-title">
+    <div class="text-2xl font-bold text-gray-800 tracking-tight">
       <h1>Medicine Storage System</h1>
     </div>
   </header>
 
   <!-- Main content area -->
-  <main class="kiosk-main">
-    <!-- Left Column: Camera Section -->
-    <section class="camera-section">
-      <div class="camera-container">
-        <video #videoElement class="camera-feed" autoplay muted playsinline></video>
+  <main class="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 p-6 overflow-hidden">
+    <!-- Left Column: Camera Section (Takes 2 columns on large screens) -->
+    <section class="lg:col-span-2 flex flex-col gap-4 min-h-0">
+      <div
+        class="relative flex-1 bg-black rounded-2xl overflow-hidden shadow-lg flex items-center justify-center min-h-[400px]"
+      >
+        <video
+          #videoElement
+          class="w-full h-full object-cover z-0"
+          autoplay
+          muted
+          playsinline
+        ></video>
 
         <!-- Medicine detection bounding boxes overlay -->
         @for (detection of currentDetections(); track detection.id) {
-          <!-- Only show bounding box if coordinates are valid (not -1) -->
-          @if (detection.bbox.x >= 0 && detection.bbox.y >= 0 && detection.bbox.width > 0 && detection.bbox.height > 0) {
-            <div
-              class="bounding-box medicine-box"
-              [class.selected]="selectedMedicine() === detection"
-              [style.left.px]="detection.bbox.x"
-              [style.top.px]="detection.bbox.y"
-              [style.width.px]="detection.bbox.width"
-              [style.height.px]="detection.bbox.height"
-              (click)="selectMedicine(detection)"
-            >
-          <span class="detection-label"
-          >{{ detection.medicine?.name || detection.name }} ({{ (detection.confidence * 100).toFixed(1) }}%)</span
+        <!-- Only show bounding box if coordinates are valid (not -1) -->
+        @if (detection.bbox.x >= 0 && detection.bbox.y >= 0 && detection.bbox.width > 0 &&
+        detection.bbox.height > 0) {
+        <div
+          class="absolute border-2 border-green-500 rounded-lg cursor-pointer transition-all duration-200 hover:bg-green-500/10 z-10"
+          [class.border-blue-500]="selectedMedicine() === detection"
+          [ngClass]="{ 'bg-blue-500/10': selectedMedicine() === detection }"
+          [style.left.px]="detection.bbox.x"
+          [style.top.px]="detection.bbox.y"
+          [style.width.px]="detection.bbox.width"
+          [style.height.px]="detection.bbox.height"
+          (click)="selectMedicine(detection)"
+        >
+          <span
+            class="absolute -top-8 left-0 bg-green-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm whitespace-nowrap z-20"
+            [class.bg-blue-600]="selectedMedicine() === detection"
           >
-            </div>
-          }
-        }
+            {{ detection.medicine?.name || detection.name }} ({{
+              (detection.confidence * 100).toFixed(1)
+            }}%)
+          </span>
+        </div>
+        } }
       </div>
 
       <!-- Camera controls -->
-      <div class="camera-controls">
-        <div class="status-indicators">
-          <div class="indicator">
-            <span class="label">Camera:</span>
-            {{ isCameraActive() ? 'Active' : 'Inactive' }}
+      <div
+        class="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-200"
+      >
+        <div class="flex gap-6">
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-semibold text-gray-500">Camera:</span>
+            <span
+              class="px-3 py-1 rounded-full text-xs font-medium"
+              [class.bg-green-100]="isCameraActive()"
+              [class.text-green-700]="isCameraActive()"
+              [class.bg-red-100]="!isCameraActive()"
+              [class.text-red-700]="!isCameraActive()"
+            >
+              {{ isCameraActive() ? 'Active' : 'Inactive' }}
+            </span>
           </div>
-          <div class="indicator">
-            <span class="label">Status:</span>
-            {{ isProcessing() ? 'Processing...' : 'Ready' }}
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-semibold text-gray-500">Status:</span>
+            <span
+              class="px-3 py-1 rounded-full text-xs font-medium"
+              [class.bg-yellow-100]="isProcessing()"
+              [class.text-yellow-700]="isProcessing()"
+              [class.bg-blue-100]="!isProcessing()"
+              [class.text-blue-700]="!isProcessing()"
+            >
+              {{ isProcessing() ? 'Processing...' : 'Ready' }}
+            </span>
           </div>
         </div>
 
-        <div class="control-buttons">
-          <button type="button" class="control-btn" (click)="refreshCamera()">
-            <i class="fas fa-refresh"></i> Refresh Camera
-          </button>
-        </div>
+        <button
+          type="button"
+          class="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+          (click)="refreshCamera()"
+        >
+          <i class="fas fa-sync-alt"></i> Refresh Camera
+        </button>
       </div>
 
       <!-- Instructions panel for non-authenticated users -->
       @if (!isUserAuthenticated()) {
-        <div class="instructions-panel">
-          <h3>Instructions</h3>
-          <ol>
-            <li>Position your face in front of the camera</li>
-            <li>Wait for face recognition to complete</li>
-            <li>Once authenticated, place medicines in the camera view</li>
-            <li>Select detected medicines to manage storage</li>
-          </ol>
-        </div>
+      <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Instructions</h3>
+        <ol class="list-decimal list-inside space-y-2 text-gray-600">
+          <li>Position your face in front of the camera</li>
+          <li>Wait for face recognition to complete</li>
+          <li>Once authenticated, place medicines in the camera view</li>
+          <li>Select detected medicines to manage storage</li>
+        </ol>
+      </div>
       }
 
-      <!-- Medicine detection panel for authenticated users -->
+      <!-- Medicine detection panel hint for authenticated users -->
       @if (isUserAuthenticated()) {
-        <div class="medicine-panel">
-          <h3>Medicine Detection</h3>
-          <p>Place medicines in front of the camera to detect them automatically.</p>
+      <div class="bg-blue-50 p-6 rounded-xl border border-blue-100">
+        <div class="flex items-start gap-4">
+          <div class="p-3 bg-blue-100 text-blue-600 rounded-full">
+            <i class="fas fa-pills text-xl"></i>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold text-blue-900 mb-1">Medicine Detection Active</h3>
+            <p class="text-blue-700">
+              Place medicines in front of the camera to detect them automatically. Click on a
+              bounding box to select it.
+            </p>
+          </div>
         </div>
+      </div>
       }
     </section>
 
     <!-- Right Column: Control Panel Section -->
-    <section class="control-panel">
+    <section
+      class="flex flex-col gap-5 bg-white p-6 rounded-2xl shadow-sm border border-gray-200 h-full overflow-y-auto"
+    >
       <!-- Show welcome message for authenticated users -->
       @if (isUserAuthenticated()) {
-        <div class="panel-header">
-          <h2>Detection Results ({{ detectionCount() }})</h2>
-          @if (currentDetections().length > 0) {
+      <div class="flex justify-between items-center mb-2">
+        <h2 class="text-xl font-bold text-gray-800">Detections ({{ detectionCount() }})</h2>
+        @if (currentDetections().length > 0) {
+        <button
+          type="button"
+          class="flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+          (click)="logout()"
+          title="Clear all detections"
+        >
+          <i class="fas fa-trash-alt"></i> Clear All
+        </button>
+        }
+      </div>
+
+      <!-- Detection list -->
+      @if (currentDetections().length > 0) {
+      <div class="flex flex-col gap-3">
+        @for (detection of currentDetections(); track detection.id) {
+        <div
+          class="p-4 rounded-xl border transition-all duration-200 cursor-pointer hover:shadow-md"
+          [class.border-blue-500]="selectedMedicine() === detection"
+          [class.bg-blue-50]="selectedMedicine() === detection"
+          [class.border-gray-200]="selectedMedicine() !== detection"
+          [class.bg-gray-50]="selectedMedicine() !== detection"
+          [class.border-l-4]="true"
+          [class.border-l-green-500]="getMedicineStatusClass(detection) === 'high-confidence'"
+          [class.border-l-yellow-500]="getMedicineStatusClass(detection) === 'medium-confidence'"
+          [class.border-l-red-500]="getMedicineStatusClass(detection) === 'low-confidence'"
+        >
+          <div class="flex justify-between items-start mb-2" (click)="selectMedicine(detection)">
+            <h4 class="font-bold text-gray-900 text-lg">
+              {{ detection.medicine?.name || detection.name }}
+            </h4>
+            <span
+              class="px-2 py-1 rounded text-xs font-bold"
+              [class.bg-green-100]="detection.confidence > 0.8"
+              [class.text-green-700]="detection.confidence > 0.8"
+              [class.bg-yellow-100]="detection.confidence <= 0.8 && detection.confidence > 0.6"
+              [class.text-yellow-700]="detection.confidence <= 0.8 && detection.confidence > 0.6"
+              [class.bg-red-100]="detection.confidence <= 0.6"
+              [class.text-red-700]="detection.confidence <= 0.6"
+            >
+              {{ (detection.confidence * 100).toFixed(1) }}%
+            </span>
+          </div>
+          <p class="text-sm text-gray-600 mb-4 line-clamp-2">
+            {{ detection.medicine?.description || detection.description || detection.details }}
+          </p>
+
+          @if (userRole() === 'PHARMACIST' || userRole() === 'IT_ADMIN') {
+          <div class="flex gap-2">
             <button
               type="button"
-              class="action-btn clear-btn"
-              (click)="logout()"
-              title="Clear all detections"
+              class="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+              (click)="dispenseMedicine(detection)"
+              title="Dispense medicine"
             >
-              <i class="fas fa-trash"></i> Clear All
+              <i class="fas fa-pills"></i> Dispense
             </button>
+
+            <button
+              type="button"
+              class="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+              (click)="addToStorage(detection)"
+              title="Add to storage"
+            >
+              <i class="fas fa-plus"></i> Add
+            </button>
+          </div>
           }
         </div>
-
-        <!-- Detection list -->
-        @if (currentDetections().length > 0) {
-          <div class="detection-list">
-            @for (detection of currentDetections(); track detection.id) {
-              <div
-                class="detection-item"
-                [class.selected]="selectedMedicine() === detection"
-                [class]="getMedicineStatusClass(detection)"
-              >
-                <div class="item-header" (click)="selectMedicine(detection)">
-                  <h4>{{ detection.medicine?.name || detection.name }}</h4>
-                  <span class="confidence">{{ (detection.confidence * 100).toFixed(1) }}%</span>
-                </div>
-                <p
-                  class="description">{{ detection.medicine?.description || detection.description || detection.details }}</p>
-
-                @if (userRole() === 'PHARMACIST' || userRole() === 'IT_ADMIN') {
-                  <div class="action-buttons">
-                    <button
-                      type="button"
-                      class="action-btn dispense-btn"
-                      (click)="dispenseMedicine(detection)"
-                      title="Dispense medicine"
-                    >
-                      <i class="fas fa-pills"></i> Dispense
-                    </button>
-
-                    <button
-                      type="button"
-                      class="action-btn add-btn"
-                      (click)="addToStorage(detection)"
-                      title="Add to storage"
-                    >
-                      <i class="fas fa-plus"></i> Add
-                    </button>
-                  </div>
-                }
-              </div>
-            }
-          </div>
-        } @else {
-          <div class="no-detections">
-            <p>No medicines detected yet. Place medicines in front of the camera.</p>
-          </div>
         }
+      </div>
       } @else {
-        <!-- Show authentication prompt for non-authenticated users -->
-        <div class="auth-prompt">
-          <h2>Authentication Required</h2>
-          <p>Please position your face in front of the camera to begin using the system.</p>
-          <div class="auth-steps">
-            <div class="step">
-              <i class="fas fa-user-circle"></i>
-              <span>Step 1: Face Recognition</span>
+      <div class="flex flex-col items-center justify-center h-64 text-center text-gray-400">
+        <i class="fas fa-box-open text-4xl mb-3 text-gray-300"></i>
+        <p>No medicines detected yet.</p>
+        <p class="text-sm mt-1">Place medicines in front of the camera.</p>
+      </div>
+      } } @else {
+      <!-- Show authentication prompt for non-authenticated users -->
+      <div class="flex flex-col justify-center items-center h-full text-center">
+        <div
+          class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-6 text-blue-600 text-2xl"
+        >
+          <i class="fas fa-user-lock"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-800 mb-2">Authentication Required</h2>
+        <p class="text-gray-600 mb-8 max-w-xs">
+          Please position your face in front of the camera to begin using the system.
+        </p>
+
+        <div class="w-full max-w-xs space-y-4">
+          <div class="flex items-center gap-4 p-4 rounded-xl bg-gray-50 border border-gray-100">
+            <div
+              class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm text-blue-600 font-bold"
+            >
+              1
             </div>
-            <div class="step">
-              <i class="fas fa-pills"></i>
-              <span>Step 2: Medicine Detection</span>
+            <div class="text-left">
+              <p class="font-semibold text-gray-800">Face Recognition</p>
+              <p class="text-xs text-gray-500">Auto-detects your identity</p>
             </div>
-            <div class="step">
-              <i class="fas fa-check-circle"></i>
-              <span>Step 3: Manage Storage</span>
+          </div>
+
+          <div class="flex items-center gap-4 p-4 rounded-xl bg-gray-50 border border-gray-100">
+            <div
+              class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm text-blue-600 font-bold"
+            >
+              2
+            </div>
+            <div class="text-left">
+              <p class="font-semibold text-gray-800">Medicine Detection</p>
+              <p class="text-xs text-gray-500">Place medicines clearly</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-4 p-4 rounded-xl bg-gray-50 border border-gray-100">
+            <div
+              class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm text-blue-600 font-bold"
+            >
+              3
+            </div>
+            <div class="text-left">
+              <p class="font-semibold text-gray-800">Manage Storage</p>
+              <p class="text-xs text-gray-500">Add or dispense items</p>
             </div>
           </div>
         </div>
+      </div>
       }
     </section>
   </main>
 
   <!-- Footer -->
-  <footer class="kiosk-footer">
-    <div class="system-status">
-      <span class="status-indicator"
-            [class.online]="systemStatus().isOnline"
-            [class.offline]="!systemStatus().isOnline"></span>
-      <span>System Status: {{ systemStatus().isOnline ? 'Online' : 'Offline' }}</span>
+  <footer
+    class="bg-white border-t border-gray-200 px-8 py-4 flex justify-between items-center text-sm z-10 shadow-[0_-2px_10px_rgba(0,0,0,0.02)]"
+  >
+    <div class="flex items-center gap-6">
+      <div class="flex items-center gap-2">
+        <span
+          class="w-2.5 h-2.5 rounded-full"
+          [class.bg-green-500]="systemStatus().isOnline"
+          [class.bg-red-500]="!systemStatus().isOnline"
+          [class.animate-pulse]="systemStatus().isOnline"
+        ></span>
+        <span class="font-medium text-gray-700"
+          >System Status: {{ systemStatus().isOnline ? 'Online' : 'Offline' }}</span
+        >
+      </div>
+      <div class="text-gray-500">Last updated: {{ formatTimestamp(systemStatus().lastSync) }}</div>
     </div>
-    <div class="timestamp">Last updated: {{ formatTimestamp(systemStatus().lastSync) }}</div>
 
-    <div class="footer-controls">
+    <div class="flex items-center gap-3">
       <button
         type="button"
-        class="footer-btn"
-        [class.active]="showAccessPanel()"
+        class="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors"
+        [class.bg-blue-600]="showAccessPanel()"
+        [class.text-white]="showAccessPanel()"
+        [class.bg-gray-100]="!showAccessPanel()"
+        [class.text-gray-700]="!showAccessPanel()"
+        [class.hover:bg-gray-200]="!showAccessPanel()"
         (click)="toggleAccessPanel()"
       >
         <i class="fas fa-history"></i> Access Log
@@ -213,81 +329,120 @@
 
       <button
         type="button"
-        class="footer-btn"
-        [class.active]="showSystemPanel()"
+        class="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors"
+        [class.bg-blue-600]="showSystemPanel()"
+        [class.text-white]="showSystemPanel()"
+        [class.bg-gray-100]="!showSystemPanel()"
+        [class.text-gray-700]="!showSystemPanel()"
+        [class.hover:bg-gray-200]="!showSystemPanel()"
         (click)="toggleSystemPanel()"
       >
         <i class="fas fa-cog"></i> System
       </button>
 
       @if (isUserAuthenticated()) {
-        <button type="button" class="footer-btn logout-btn" (click)="logout()">
-          <i class="fas fa-sign-out-alt"></i> Logout
-        </button>
+      <button
+        type="button"
+        class="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg font-medium hover:bg-red-100 transition-colors"
+        (click)="logout()"
+      >
+        <i class="fas fa-sign-out-alt"></i> Logout
+      </button>
       }
     </div>
   </footer>
 
   <!-- Access panel overlay -->
   @if (showAccessPanel()) {
-    <div class="overlay-panel access-panel">
-      <div class="panel-content">
-        <div class="panel-header">
-          <h3>Recent Access Log</h3>
-          <button type="button" class="close-btn" (click)="toggleAccessPanel()">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-        <div class="access-list">
+  <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div
+      class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col animate-fadeInScale"
+    >
+      <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+        <h3 class="text-xl font-bold text-gray-800">Recent Access Log</h3>
+        <button
+          type="button"
+          class="text-gray-400 hover:text-gray-600 transition-colors"
+          (click)="toggleAccessPanel()"
+        >
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+      <div class="p-6 overflow-y-auto">
+        <div class="flex flex-col gap-3">
           @for (log of accessLogs(); track log.id) {
-            <div class="access-item">
-              <div class="user-name">{{ log.email }}</div>
-              <div class="timestamp">{{ formatTimestamp(log.timestamp) }}</div>
-              <div class="action">{{ log.action }}</div>
+          <div
+            class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border-l-4 border-blue-500"
+          >
+            <div>
+              <div class="font-semibold text-gray-800">{{ log.email }}</div>
+              <div class="text-xs text-gray-500 mt-1">{{ formatTimestamp(log.timestamp) }}</div>
             </div>
+            <div
+              class="text-green-600 font-medium text-sm bg-green-50 px-3 py-1 rounded-full border border-green-100"
+            >
+              {{ log.action }}
+            </div>
+          </div>
           } @empty {
-            <div class="no-data">No access logs available</div>
+          <div class="text-center py-10 text-gray-500 italic">No access logs available</div>
           }
         </div>
       </div>
     </div>
+  </div>
   }
 
   <!-- System panel overlay -->
   @if (showSystemPanel()) {
-    <div class="overlay-panel system-panel">
-      <div class="panel-content">
-        <div class="panel-header">
-          <h3>System Information</h3>
-          <button type="button" class="close-btn" (click)="toggleSystemPanel()">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-        <div class="system-info">
-          <div class="info-item">
-            <span class="label">Status:</span>
-            <span
-              class="value"
-              [class.online]="systemStatus().isOnline"
-              [class.offline]="!systemStatus().isOnline"
-            >
+  <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div
+      class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] overflow-hidden flex flex-col animate-fadeInScale"
+    >
+      <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+        <h3 class="text-xl font-bold text-gray-800">System Information</h3>
+        <button
+          type="button"
+          class="text-gray-400 hover:text-gray-600 transition-colors"
+          (click)="toggleSystemPanel()"
+        >
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+      <div class="p-6 space-y-4">
+        <div class="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
+          <span class="font-medium text-gray-700">Status:</span>
+          <span
+            class="px-3 py-1 rounded-full text-xs font-bold"
+            [class.bg-green-100]="systemStatus().isOnline"
+            [class.text-green-700]="systemStatus().isOnline"
+            [class.bg-red-100]="!systemStatus().isOnline"
+            [class.text-red-700]="!systemStatus().isOnline"
+          >
             {{ systemStatus().isOnline ? 'Online' : 'Offline' }}
           </span>
-          </div>
-          <div class="info-item">
-            <span class="label">Last Sync:</span>
-            <span class="value">{{ formatTimestamp(systemStatus().lastSync) }}</span>
-          </div>
-          <div class="info-item">
-            <span class="label">User:</span>
-            <span class="value">{{ userName() }} ({{ userRole() }})</span>
-          </div>
-          <div class="info-item">
-            <span class="label">Detections:</span>
-            <span class="value">{{ detectionCount() }} active</span>
-          </div>
+        </div>
+
+        <div class="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
+          <span class="font-medium text-gray-700">Last Sync:</span>
+          <span class="text-gray-600 font-mono text-sm">{{
+            formatTimestamp(systemStatus().lastSync)
+          }}</span>
+        </div>
+
+        <div class="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
+          <span class="font-medium text-gray-700">User:</span>
+          <span class="text-gray-600 text-sm">{{ userName() }} ({{ userRole() }})</span>
+        </div>
+
+        <div class="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
+          <span class="font-medium text-gray-700">Detections:</span>
+          <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full font-bold text-sm"
+            >{{ detectionCount() }} active</span
+          >
         </div>
       </div>
     </div>
+  </div>
   }
 </div>
