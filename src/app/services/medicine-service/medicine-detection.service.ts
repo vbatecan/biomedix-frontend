@@ -1,9 +1,9 @@
-import { Injectable, inject, ElementRef, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { ElementRef, Injectable, inject, signal } from '@angular/core';
 import { MessageService } from 'primeng/api';
+import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { MedicineDetectionResponse, MedicineDetection } from '../types';
+import { MedicineDetection, MedicineDetectionResponse } from '../types';
 
 @Injectable({
   providedIn: 'root'
@@ -15,7 +15,6 @@ export class MedicineDetectionService {
 
   // Medicine detection state
   medicineDetections = signal<MedicineDetection[]>([]);
-  private readonly CONFIDENCE_THRESHOLD = 0.1; // 10% improvement required for replacement
 
   /**
    * Process medicine detection with API call
@@ -82,6 +81,24 @@ export class MedicineDetectionService {
     }
 
     const newDetections: MedicineDetection[] = results.map((result, index) => {
+      const rawBbox = result.detection.bbox;
+      const paddingX = rawBbox.width * 0.15;
+      const paddingY = rawBbox.height * 0.15;
+
+      let bX = rawBbox.x - paddingX;
+      let bY = rawBbox.y - paddingY;
+      let bW = rawBbox.width + (2 * paddingX);
+      let bH = rawBbox.height + (2 * paddingY);
+
+      if (bX < 0) {
+        bW += bX;
+        bX = 0;
+      }
+      if (bY < 0) {
+        bH += bY;
+        bY = 0;
+      }
+
       const detection: MedicineDetection = {
         id: `medicine_${Date.now()}_${index}`,
         name: result.classify.product.charAt(0).toUpperCase() + result.classify.product.slice(1),
@@ -89,10 +106,10 @@ export class MedicineDetectionService {
         confidence: result.detection.confidence,
         classifyConfidence: result.classify.confidence,
         bbox: canCalculateBoundingBoxes ? {
-          x: result.detection.bbox.x * scaleX,
-          y: result.detection.bbox.y * scaleY,
-          width: result.detection.bbox.width * scaleX,
-          height: result.detection.bbox.height * scaleY
+          x: bX * scaleX,
+          y: bY * scaleY,
+          width: bW * scaleX,
+          height: bH * scaleY
         } : {
           x: -1, // Use -1 to indicate invalid bounding box
           y: -1,
