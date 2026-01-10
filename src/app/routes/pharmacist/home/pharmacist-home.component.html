@@ -15,13 +15,7 @@
         rounded
       >
       </p-button>
-      <p-button
-        label="Refresh"
-        icon="pi pi-refresh"
-        (onClick)="loadMedicines()"
-        outlined
-        rounded
-      >
+      <p-button label="Refresh" icon="pi pi-refresh" (onClick)="loadMedicines()" outlined rounded>
       </p-button>
     </div>
     <div class="text-sm text-gray-600">Total medicines: {{ totalMedicines() }}</div>
@@ -174,7 +168,7 @@
             "
           />
           @if (medicineForm.get('name')?.invalid && medicineForm.get('name')?.touched) {
-            <small class="text-red-500"> Medicine name is required (max 100 characters) </small>
+          <small class="text-red-500"> Medicine name is required (max 100 characters) </small>
           }
         </div>
 
@@ -194,8 +188,9 @@
             "
           >
           </textarea>
-          @if (medicineForm.get('description')?.invalid && medicineForm.get('description')?.touched) {
-            <small class="text-red-500"> Description is required (max 255 characters) </small>
+          @if (medicineForm.get('description')?.invalid && medicineForm.get('description')?.touched)
+          {
+          <small class="text-red-500"> Description is required (max 255 characters) </small>
           }
         </div>
 
@@ -211,7 +206,7 @@
           >
           </p-inputNumber>
           @if (medicineForm.get('stock')?.invalid && medicineForm.get('stock')?.touched) {
-            <small class="text-red-500"> Stock quantity must be 0 or greater </small>
+          <small class="text-red-500"> Stock quantity must be 0 or greater </small>
           }
         </div>
       </div>
@@ -221,10 +216,7 @@
 
         <div class="mb-6">
           <label class="block text-sm font-medium text-gray-700 mb-2">
-            @if (!isEditing()) {
-              Thumbnail Image *
-            } @else {
-              Thumbnail Image (optional for updates)
+            @if (!isEditing()) { Thumbnail Image * } @else { Thumbnail Image (optional for updates)
             }
           </label>
           <p-fileUpload
@@ -242,27 +234,24 @@
 
           <!-- Thumbnail Preview -->
           @if (thumbnailPreview()) {
-            <div class="mt-3">
-              <img
-                [src]="thumbnailPreview()"
-                alt="Thumbnail preview"
-                class="w-24 h-24 object-cover rounded-lg shadow-sm"
-              />
-            </div>
+          <div class="mt-3">
+            <img
+              [src]="thumbnailPreview()"
+              alt="Thumbnail preview"
+              class="w-24 h-24 object-cover rounded-lg shadow-sm"
+            />
+          </div>
           }
         </div>
 
         <!-- Training Images Upload -->
         <div class="mb-6">
           <label class="block text-sm font-medium text-gray-700 mb-2">
-            @if (!isEditing()) {
-              Training Images (3 required) *
-            } @else {
-              Training Images (optional
-                for updates)
-            }
+            @if (!isEditing()) { Training Images (at least 3 recommended) * } @else { Training
+            Images (optional for updates) }
           </label>
           <p-fileUpload
+            #trainingUpload
             mode="basic"
             name="trainingImages"
             accept="image/*"
@@ -274,21 +263,19 @@
             class="mb-2"
           >
           </p-fileUpload>
-          <small class="text-gray-500"
-          >Upload exactly 3 training images for AI model (max 5MB each)</small
-          >
+          <small class="text-gray-500">Upload training images for AI model (max 5MB each)</small>
 
           <!-- Training Images Preview -->
           @if (trainingImagePreviews().length > 0) {
-            <div class="mt-3 flex gap-2">
-              @for (preview of trainingImagePreviews(); track $index) {
-                <img
-                  [src]="preview"
-                  alt="Training image preview"
-                  class="w-20 h-20 object-cover rounded-lg shadow-sm"
-                />
-              }
-            </div>
+          <div class="mt-3 flex gap-2">
+            @for (preview of trainingImagePreviews(); track $index) {
+            <img
+              [src]="preview"
+              alt="Training image preview"
+              class="w-20 h-20 object-cover rounded-lg shadow-sm"
+            />
+            }
+          </div>
           }
         </div>
       </div>
@@ -320,38 +307,38 @@
     [resizable]="false"
   >
     @if (selectedMedicine(); as medicine) {
-      <div class="space-y-4">
-        <div class="text-center">
-          <img
-            [src]="medicine.image_path"
-            [alt]="medicine.name"
-            class="w-32 h-32 object-cover rounded-lg shadow-md mx-auto mb-4"
-            onerror="this.src='assets/placeholder-medicine.png'"
-          />
-          <h2 class="text-2xl font-bold text-gray-800">{{ medicine.name }}</h2>
-        </div>
+    <div class="space-y-4">
+      <div class="text-center">
+        <img
+          [src]="medicine.image_path"
+          [alt]="medicine.name"
+          class="w-32 h-32 object-cover rounded-lg shadow-md mx-auto mb-4"
+          onerror="this.src='assets/placeholder-medicine.png'"
+        />
+        <h2 class="text-2xl font-bold text-gray-800">{{ medicine.name }}</h2>
+      </div>
 
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-500">Stock Quantity</label>
-            <p-tag
-              [value]="medicine.stock.toString()"
-              [severity]="getStockSeverity(medicine.stock)"
-              class="mt-1"
-            >
-            </p-tag>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-500">Medicine ID</label>
-            <p class="text-gray-800">#{{ medicine.id }}</p>
-          </div>
-        </div>
-
+      <div class="grid grid-cols-2 gap-4">
         <div>
-          <label class="block text-sm font-medium text-gray-500 mb-2">Description</label>
-          <p class="text-gray-800 leading-relaxed">{{ medicine.description }}</p>
+          <label class="block text-sm font-medium text-gray-500">Stock Quantity</label>
+          <p-tag
+            [value]="medicine.stock.toString()"
+            [severity]="getStockSeverity(medicine.stock)"
+            class="mt-1"
+          >
+          </p-tag>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-500">Medicine ID</label>
+          <p class="text-gray-800">#{{ medicine.id }}</p>
         </div>
       </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-500 mb-2">Description</label>
+        <p class="text-gray-800 leading-relaxed">{{ medicine.description }}</p>
+      </div>
+    </div>
     }
 
     <ng-template pTemplate="footer">

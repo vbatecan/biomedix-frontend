@@ -44,6 +44,7 @@ import { TableModule } from 'primeng/table';
 })
 export class PharmacistHomeComponent {
   @ViewChild('searchInput') searchInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('trainingUpload') trainingUpload!: any; // specific type can be tricky with imports sometimes, using any for safety or FileUpload if imported
 
   private readonly API_URL = environment.apiUrl;
   private fb = inject(FormBuilder);
@@ -83,7 +84,7 @@ export class PharmacistHomeComponent {
           response.map(medicine => {
             return {
               ...medicine,
-              image_path: `${ this.API_URL }/medicines/${ medicine.image_path }`
+              image_path: `${this.API_URL}/medicines/${medicine.image_path}`
             }
           })
         );
@@ -122,7 +123,7 @@ export class PharmacistHomeComponent {
 
   deleteMedicine(medicine: Medicine): void {
     this.confirmationService.confirm({
-      message: `Are you sure you want to delete ${ medicine.name }?`,
+      message: `Are you sure you want to delete ${medicine.name}?`,
       header: 'Confirm Delete',
       icon: 'pi pi-exclamation-triangle',
       accept: () => {
@@ -197,6 +198,22 @@ export class PharmacistHomeComponent {
           training_files: Array.from(this.selectedTrainingFiles())
         }
 
+        // Robustness check: Sync with FileUpload component if signal is empty
+        if (this.selectedTrainingFiles().length === 0 && this.trainingUpload && this.trainingUpload.files && this.trainingUpload.files.length > 0) {
+          console.log('Signal was empty but FileUpload has files. Syncing...');
+          this.selectedTrainingFiles.set(this.trainingUpload.files);
+          medicineInput.training_files = Array.from(this.trainingUpload.files);
+        }
+
+        if (this.selectedTrainingFiles().length === 0) {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'At least one training file is required'
+          });
+          return;
+        }
+
         this.medicineService.createMedicine(medicineInput).subscribe({
           next: (response) => {
             console.log(response);
@@ -239,6 +256,9 @@ export class PharmacistHomeComponent {
     this.trainingImagePreviews.set([]);
     this.selectedThumbnailFile.set(null);
     this.selectedTrainingFiles.set([]);
+    if (this.trainingUpload) {
+      this.trainingUpload.clear();
+    }
   }
 
   onThumbnailSelect(event: FileSelectEvent): void {
@@ -253,24 +273,51 @@ export class PharmacistHomeComponent {
     }
   }
 
-  onTrainingImagesSelect(event: FileSelectEvent): void {
-    const files = event.files;
-    if (files.length > 0) {
-      this.selectedTrainingFiles.set(files);
-      const previews: string[] = [];
+  onTrainingImagesSelect(event: any): void {
+    console.log('onTrainingImagesSelect triggered with event:', event);
 
-      console.log(files);
+    let files: File[] = [];
+    if (event.files) {
+      files = event.files;
+    } else if (event.currentFiles) {
+      files = event.currentFiles;
+    } else if (event.target && event.target.files) {
+      // Standard DOM event
+      files = Array.from(event.target.files);
+    } else if (event.originalEvent && event.originalEvent.target && event.originalEvent.target.files) {
+      // PrimeNG wrapped DOM event sometimes
+      files = Array.from(event.originalEvent.target.files);
+    }
+
+    // Fallback: Check the ViewChild directly if event parsing gave nothing
+    if ((!files || files.length === 0) && this.trainingUpload && this.trainingUpload.files && this.trainingUpload.files.length > 0) {
+      console.log('Event did not yield files, falling back to ViewChild files');
+      files = Array.from(this.trainingUpload.files);
+    }
+
+    if (files && files.length > 0) {
+      this.selectedTrainingFiles.set(files);
+      console.log('Selected training files updated:', files.length);
+
+      const promises: Promise<string>[] = [];
       const fileArray = Array.from(files);
+
       fileArray.forEach(file => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          previews.push(e.target?.result as string);
-          if (previews.length === files.length) {
-            this.trainingImagePreviews.set(previews);
-          }
-        };
-        reader.readAsDataURL(file);
+        promises.push(new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            resolve(e.target?.result as string);
+          };
+          reader.readAsDataURL(file);
+        }));
       });
+
+      Promise.all(promises).then(previews => {
+        this.trainingImagePreviews.set(previews);
+        console.log('Training image previews generated:', previews.length);
+      });
+    } else {
+      console.warn('onTrainingImagesSelect triggered but no files found in event');
     }
   }
 
