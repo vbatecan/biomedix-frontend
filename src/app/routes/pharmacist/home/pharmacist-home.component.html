@@ -310,10 +310,11 @@
     <div class="space-y-4">
       <div class="text-center">
         <img
+          #imgRef
           [src]="medicine.image_path"
           [alt]="medicine.name"
           class="w-32 h-32 object-cover rounded-lg shadow-md mx-auto mb-4"
-          onerror="this.src='assets/placeholder-medicine.png'"
+          (error)="imgRef.src = 'assets/placeholder-medicine.png'"
         />
         <h2 class="text-2xl font-bold text-gray-800">{{ medicine.name }}</h2>
       </div>

@@ -7,7 +7,7 @@ import { CardModule } from 'primeng/card';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
-import { FileUploadModule } from 'primeng/fileupload';
+import { FileUploadModule, FileUpload } from 'primeng/fileupload';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
@@ -21,7 +21,6 @@ import { TableModule } from 'primeng/table';
 
 @Component({
   selector: 'app-pharmacist-home',
-  standalone: true,
   imports: [
     CommonModule,
     ReactiveFormsModule,
@@ -44,7 +43,7 @@ import { TableModule } from 'primeng/table';
 })
 export class PharmacistHomeComponent {
   @ViewChild('searchInput') searchInput!: ElementRef<HTMLInputElement>;
-  @ViewChild('trainingUpload') trainingUpload!: any; // specific type can be tricky with imports sometimes, using any for safety or FileUpload if imported
+  @ViewChild('trainingUpload') trainingUpload!: FileUpload;
 
   private readonly API_URL = environment.apiUrl;
   private fb = inject(FormBuilder);
@@ -91,7 +90,12 @@ export class PharmacistHomeComponent {
         this.loading.set(false);
       },
       error: (error) => {
-        console.error('Error fetching medicines:', error);
+        // Error handled via logging service or UI feedback
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to load medicines'
+        });
         this.loading.set(false);
       }
     });
@@ -140,7 +144,11 @@ export class PharmacistHomeComponent {
             });
           },
           error: (error) => {
-            console.error('Error deleting medicine:', error);
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'Failed to delete medicine'
+            });
           }
         });
       }
@@ -200,7 +208,6 @@ export class PharmacistHomeComponent {
 
         // Robustness check: Sync with FileUpload component if signal is empty
         if (this.selectedTrainingFiles().length === 0 && this.trainingUpload && this.trainingUpload.files && this.trainingUpload.files.length > 0) {
-          console.log('Signal was empty but FileUpload has files. Syncing...');
           this.selectedTrainingFiles.set(this.trainingUpload.files);
           medicineInput.training_files = Array.from(this.trainingUpload.files);
         }
@@ -216,7 +223,7 @@ export class PharmacistHomeComponent {
 
         this.medicineService.createMedicine(medicineInput).subscribe({
           next: (response) => {
-            console.log(response);
+
             const medicines = this.medicines();
             this.medicines.set([...medicines, response]);
             this.messageService.add({
@@ -226,7 +233,7 @@ export class PharmacistHomeComponent {
             });
           },
           error: (error: HttpErrorResponse) => {
-            console.error('Error adding medicine:', error);
+
             this.messageService.add({
               severity: 'error',
               summary: 'Error',
@@ -273,31 +280,17 @@ export class PharmacistHomeComponent {
     }
   }
 
-  onTrainingImagesSelect(event: any): void {
-    console.log('onTrainingImagesSelect triggered with event:', event);
+  onTrainingImagesSelect(event: FileSelectEvent): void {
 
-    let files: File[] = [];
-    if (event.files) {
-      files = event.files;
-    } else if (event.currentFiles) {
-      files = event.currentFiles;
-    } else if (event.target && event.target.files) {
-      // Standard DOM event
-      files = Array.from(event.target.files);
-    } else if (event.originalEvent && event.originalEvent.target && event.originalEvent.target.files) {
-      // PrimeNG wrapped DOM event sometimes
-      files = Array.from(event.originalEvent.target.files);
-    }
+    let files: File[] = event.files;
 
     // Fallback: Check the ViewChild directly if event parsing gave nothing
     if ((!files || files.length === 0) && this.trainingUpload && this.trainingUpload.files && this.trainingUpload.files.length > 0) {
-      console.log('Event did not yield files, falling back to ViewChild files');
       files = Array.from(this.trainingUpload.files);
     }
 
     if (files && files.length > 0) {
       this.selectedTrainingFiles.set(files);
-      console.log('Selected training files updated:', files.length);
 
       const promises: Promise<string>[] = [];
       const fileArray = Array.from(files);
@@ -314,10 +307,7 @@ export class PharmacistHomeComponent {
 
       Promise.all(promises).then(previews => {
         this.trainingImagePreviews.set(previews);
-        console.log('Training image previews generated:', previews.length);
       });
-    } else {
-      console.warn('onTrainingImagesSelect triggered but no files found in event');
     }
   }
 
