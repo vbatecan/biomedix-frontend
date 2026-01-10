@@ -39,8 +39,7 @@
           <p class="ml-2 text-sm text-red-600">{{ this.form().errorMessage() }}</p>
         </div>
       </div>
-      } @for (field of [{ name: 'email', label: 'Email Address', type: 'email', placeholder: 'Enter
-      your email address', autocomplete: 'email' }, { name: 'password', label: 'Password', type:
+      } @for (field of [{ name: 'email', label: 'Email Address', type: 'email', placeholder: 'Enter your email address', autocomplete: 'email' }, { name: 'password', label: 'Password', type:
       'password', placeholder: 'Enter your password', autocomplete: 'current-password' }]; track
       field.name) {
       <div class="space-y-1">
