@@ -63,6 +63,7 @@ export class KioskInterface implements OnInit, OnDestroy, AfterViewInit {
   readonly showSystemPanel = signal(false);
 
   private destroy$ = new Subject<void>();
+  private isAnalyzing = false;
 
   ngOnInit() {
     this.updateSystemStatus();
@@ -108,6 +109,9 @@ export class KioskInterface implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private async processFrame(frame: ImageData) {
+    if (this.isAnalyzing) return;
+    this.isAnalyzing = true;
+
     try {
       let faceResult: User | null = null;
       if (!this.isUserAuthenticated()) {
@@ -133,6 +137,8 @@ export class KioskInterface implements OnInit, OnDestroy, AfterViewInit {
         detail: 'Failed to process camera frame',
         life: 3000
       });
+    } finally {
+      this.isAnalyzing = false;
     }
   }
 

@@ -138,7 +138,7 @@ export class MedicineDetectionService {
         const avgCurrentConfidence = (existing.confidence + (existing.classifyConfidence || 0)) / 2;
         const avgNewConfidence = (newDetection.confidence + (newDetection.classifyConfidence || 0)) / 2;
 
-        if (avgNewConfidence > avgCurrentConfidence + this.CONFIDENCE_THRESHOLD) {
+        if (avgNewConfidence > avgCurrentConfidence) {
           mergedDetections[existingIndex] = {
             ...newDetection,
             id: existing.id,
