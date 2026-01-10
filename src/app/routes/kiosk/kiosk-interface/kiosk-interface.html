@@ -354,16 +354,20 @@
 
   <!-- Access panel overlay -->
   @if (showAccessPanel()) {
-  <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+  <div
+    class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+    (click)="closeAccessPanel()"
+  >
     <div
       class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col animate-fadeInScale"
+      (click)="$event.stopPropagation()"
     >
       <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
         <h3 class="text-xl font-bold text-gray-800">Recent Access Log</h3>
         <button
           type="button"
           class="text-gray-400 hover:text-gray-600 transition-colors"
-          (click)="toggleAccessPanel()"
+          (click)="closeAccessPanel()"
         >
           <i class="fas fa-times text-xl"></i>
         </button>
@@ -375,7 +379,7 @@
             class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border-l-4 border-blue-500"
           >
             <div>
-              <div class="font-semibold text-gray-800">{{ log.email }}</div>
+              <div class="font-semibold text-gray-800">{{ log.user?.email || 'Unknown' }}</div>
               <div class="text-xs text-gray-500 mt-1">{{ formatTimestamp(log.timestamp) }}</div>
             </div>
             <div
@@ -389,22 +393,35 @@
           }
         </div>
       </div>
+      <div class="p-6 border-t border-gray-100 bg-gray-50 flex justify-end">
+        <button
+          type="button"
+          class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+          (click)="closeAccessPanel()"
+        >
+          Close
+        </button>
+      </div>
     </div>
   </div>
   }
 
   <!-- System panel overlay -->
   @if (showSystemPanel()) {
-  <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+  <div
+    class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+    (click)="closeSystemPanel()"
+  >
     <div
       class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] overflow-hidden flex flex-col animate-fadeInScale"
+      (click)="$event.stopPropagation()"
     >
       <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
         <h3 class="text-xl font-bold text-gray-800">System Information</h3>
         <button
           type="button"
           class="text-gray-400 hover:text-gray-600 transition-colors"
-          (click)="toggleSystemPanel()"
+          (click)="closeSystemPanel()"
         >
           <i class="fas fa-times text-xl"></i>
         </button>
@@ -441,6 +458,15 @@
             >{{ detectionCount() }} active</span
           >
         </div>
+      </div>
+      <div class="p-6 border-t border-gray-100 bg-gray-50 flex justify-end">
+        <button
+          type="button"
+          class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+          (click)="closeSystemPanel()"
+        >
+          Close
+        </button>
       </div>
     </div>
   </div>

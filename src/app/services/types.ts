@@ -139,10 +139,9 @@ export interface SystemStatus {
 }
 
 export interface AccessLog {
-  id: string;
-  userId: string;
-  faceName: string;
-  email: string;
-  timestamp: Date;
+  id: number;
+  user_id: number;
+  user?: User;
   action: string;
+  timestamp: Date;
 }

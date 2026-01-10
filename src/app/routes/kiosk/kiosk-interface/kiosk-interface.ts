@@ -23,6 +23,7 @@ import { SystemService } from '../../../services/system-service/system-service';
 import { AccessLog, MedicineDetection, MedicineInteractionResponse, SystemStatus, User } from '../../../services/types';
 import { MedicineService } from '../../../services/medicine-service/medicine-service';
 import { HttpErrorResponse } from '@angular/common/http';
+import { AccessLogService } from '../../../services/access-log.service';
 
 @Component({
   selector: 'app-kiosk-interface',
@@ -43,6 +44,7 @@ export class KioskInterface implements OnInit, OnDestroy, AfterViewInit {
   private systemService = inject(SystemService);
   private messageService = inject(MessageService);
   private medicineService = inject(MedicineService);
+  private accessLogService = inject(AccessLogService);
 
   // Use the service's authenticatedUser signal
   readonly authenticatedUser = this.faceRecognitionService.authenticatedUser;
@@ -112,11 +114,8 @@ export class KioskInterface implements OnInit, OnDestroy, AfterViewInit {
         faceResult = await this.faceRecognitionService.processFrame(frame);
       }
 
-      if (faceResult && !this.isUserAuthenticated()) {
-        // Set authenticated user via service
-        this.faceRecognitionService.authenticatedUser.set(faceResult);
+      if (faceResult) {
         this.logAccess(faceResult);
-        // Show success message
         this.messageService.add({
           severity: 'success',
           summary: 'Authentication Successful',
@@ -138,22 +137,22 @@ export class KioskInterface implements OnInit, OnDestroy, AfterViewInit {
   }
 
 
-  private logAccess(user: User) {
-    const accessLog: AccessLog = {
-      id: Date.now().toString(),
-      userId: user.id || 'unknown',
-      email: user.email,
-      faceName: user.face_name,
-      timestamp: new Date(),
-      action: 'face_recognition_success'
-    };
 
-    this.accessLogs.update(logs => [accessLog, ...logs.slice(0, 9)]);
+  private logAccess(user: User) {
+    if (!user.id) return;
+
+    const userId = parseInt(user.id);
+    this.accessLogService.createAccessLog(userId, 'face_recognition_success').subscribe({
+      next: (log) => {
+        this.accessLogs.update(logs => [log, ...logs]);
+      },
+      error: (err) => console.error('Failed to save access log', err)
+    });
   }
 
   private updateSystemStatus() {
     this.systemService.getSystemStatus().subscribe({
-      next: (status: {status: boolean}) => {
+      next: (status: { status: boolean }) => {
         this.systemStatus.set({
           isOnline: status.status,
           lastSync: new Date()
@@ -171,7 +170,27 @@ export class KioskInterface implements OnInit, OnDestroy, AfterViewInit {
   }
 
   toggleAccessPanel() {
-    this.showAccessPanel.update(show => !show);
+    this.showAccessPanel.update(show => {
+      if (!show) {
+        this.fetchAccessLogs();
+      }
+      return !show;
+    });
+  }
+
+  fetchAccessLogs() {
+    this.accessLogService.getAccessLogs().subscribe({
+      next: (logs) => this.accessLogs.set(logs),
+      error: (err) => console.error('Error fetching logs', err)
+    });
+  }
+
+  closeAccessPanel() {
+    this.showAccessPanel.set(false);
+  }
+
+  closeSystemPanel() {
+    this.showSystemPanel.set(false);
   }
 
   toggleSystemPanel() {
@@ -208,7 +227,7 @@ export class KioskInterface implements OnInit, OnDestroy, AfterViewInit {
         this.messageService.add({
           severity: 'success',
           summary: 'Medicine Dispensed',
-          detail: `${ medicineName } has been dispensed from storage`,
+          detail: `${medicineName} has been dispensed from storage`,
           life: 3000
         });
       },
@@ -236,7 +255,7 @@ export class KioskInterface implements OnInit, OnDestroy, AfterViewInit {
         this.messageService.add({
           severity: 'success',
           summary: 'Medicine Added',
-          detail: `${ medicineName } has been added to storage`,
+          detail: `${medicineName} has been added to storage`,
           life: 3000
         });
       },
@@ -262,10 +281,24 @@ export class KioskInterface implements OnInit, OnDestroy, AfterViewInit {
     return 'low-confidence';
   }
 
-  formatTimestamp(date: Date): string {
-    return new Intl.DateTimeFormat('en-US', {
-      timeStyle: 'medium',
-      dateStyle: 'short'
-    }).format(date);
+  formatTimestamp(date: Date | string | undefined): string {
+    if (!date) return 'N/A';
+
+    try {
+      const dateObj = typeof date === 'string' ? new Date(date) : date;
+
+      // Check for invalid date
+      if (isNaN(dateObj.getTime())) {
+        return 'Invalid Time';
+      }
+
+      return new Intl.DateTimeFormat('en-US', {
+        timeStyle: 'medium',
+        dateStyle: 'short'
+      }).format(dateObj);
+    } catch (e) {
+      console.error('Date formatting error:', e);
+      return 'Error';
+    }
   }
 }
