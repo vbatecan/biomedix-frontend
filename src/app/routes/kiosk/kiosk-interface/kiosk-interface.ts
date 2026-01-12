@@ -222,20 +222,34 @@ export class KioskInterface implements OnInit, OnDestroy, AfterViewInit {
     });
   }
 
+  readonly quantities = signal<Record<string, number>>({});
+
+  getQuantity(id: string): number {
+    return this.quantities()[id] || 1;
+  }
+
+  setQuantity(id: string, qty: number) {
+    const validQty = Math.max(1, Math.floor(qty));
+    this.quantities.update(q => ({ ...q, [id]: validQty }));
+  }
+
   dispenseMedicine(detection: MedicineDetection) {
     this.selectMedicine(detection);
     const medicineName = detection.medicine?.name || detection.name;
+    const quantity = this.getQuantity(detection.id);
 
-    this.medicineService.dispenseMedicine(medicineName, 1).subscribe({
+    this.medicineService.dispenseMedicine(medicineName, quantity).subscribe({
       next: (response) => {
         console.log('Medicine dispensed:', response);
         this.medicineDetectionService.removeFromDetection(detection);
         this.messageService.add({
           severity: 'success',
           summary: 'Medicine Dispensed',
-          detail: `${medicineName} has been dispensed from storage`,
+          detail: `${quantity}x ${medicineName} dispensed successfully`,
           life: 3000
         });
+        // Reset quantity after operation
+        this.setQuantity(detection.id, 1);
       },
       error: (err: HttpErrorResponse) => {
         console.error('Error dispensing medicine:', err);
@@ -253,17 +267,20 @@ export class KioskInterface implements OnInit, OnDestroy, AfterViewInit {
   addToStorage(detection: MedicineDetection) {
     this.selectMedicine(detection);
     const medicineName = detection.medicine?.name || detection.name;
+    const quantity = this.getQuantity(detection.id);
 
-    this.medicineService.addStock(medicineName, 1).subscribe({
+    this.medicineService.addStock(medicineName, quantity).subscribe({
       next: (response: MedicineInteractionResponse) => {
         console.log('Stock added:', response);
         this.medicineDetectionService.removeFromDetection(detection);
         this.messageService.add({
           severity: 'success',
           summary: 'Medicine Added',
-          detail: `${medicineName} has been added to storage`,
+          detail: `${quantity}x ${medicineName} added to storage`,
           life: 3000
         });
+        // Reset quantity after operation
+        this.setQuantity(detection.id, 1);
       },
       error: (error: HttpErrorResponse) => {
         this.messageService.add({
@@ -308,3 +325,4 @@ export class KioskInterface implements OnInit, OnDestroy, AfterViewInit {
     }
   }
 }
+
