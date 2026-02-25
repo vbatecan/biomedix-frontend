@@ -109,17 +109,18 @@ export interface Medicine {
 
 export interface TransactionDetail {
   id: number;
-  medicine: Medicine;
+  medicine?: Medicine | null;
   quantity: number;
   created_at: Date;
   updated_at: Date;
 }
 
 export interface Transaction {
-  id?: number;
-  user: User;
+  id: number;
+  user?: User | null;
   mode: InventoryMode;
-  transaction_detail: TransactionDetail;
+  transaction_details: TransactionDetail[];
+  transaction_date?: Date;
   created_at: Date;
   updated_at: Date;
 }
