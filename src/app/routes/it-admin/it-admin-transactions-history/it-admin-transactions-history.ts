@@ -8,6 +8,7 @@ import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { TagModule } from 'primeng/tag';
 import { HttpErrorResponse } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-it-admin-transactions-history',
@@ -17,6 +18,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 })
 export class ItAdminTransactionsHistory implements OnInit {
   private transactionService = inject(TransactionService);
+  private readonly fetchBatchSize = 100;
 
   // Signals for state management
   transactions = signal<Transaction[]>([]);
@@ -42,26 +44,43 @@ export class ItAdminTransactionsHistory implements OnInit {
     this.loading.set(true);
     this.error.set('');
 
-    this.transactionService.all(this.currentPage(), this.pageSize())
-      .subscribe({
-        next: (data: Transaction[]) => {
-          this.transactions.set(data);
-          // Note: API should return total count, for now we'll use array length
-          this.totalRecords.set(data.length);
-          this.loading.set(false);
-        },
-        error: (error: HttpErrorResponse) => {
-          console.error('Error loading transactions:', error);
-          this.error.set('Failed to load transaction history. Please try again.');
-          this.loading.set(false);
-        }
+    this.fetchAllTransactions()
+      .then((data: Transaction[]) => {
+        this.transactions.set(data);
+        this.totalRecords.set(data.length);
+      })
+      .catch((error: HttpErrorResponse) => {
+        console.error('Error loading transactions:', error);
+        this.error.set('Failed to load transaction history. Please try again.');
+      })
+      .finally(() => {
+        this.loading.set(false);
       });
+  }
+
+  private async fetchAllTransactions(): Promise<Transaction[]> {
+    const allTransactions: Transaction[] = [];
+    let page = 0;
+
+    while (true) {
+      const batch = await firstValueFrom(
+        this.transactionService.all(page, this.fetchBatchSize)
+      );
+      allTransactions.push(...batch);
+
+      if (batch.length < this.fetchBatchSize) {
+        break;
+      }
+
+      page += 1;
+    }
+
+    return allTransactions;
   }
 
   onPageChange(event: any) {
     this.currentPage.set(event.page);
     this.pageSize.set(event.rows);
-    this.loadTransactions();
   }
 
   getInventoryModeLabel(mode: InventoryMode): string {
@@ -72,8 +91,12 @@ export class ItAdminTransactionsHistory implements OnInit {
     return mode === InventoryMode.IN ? 'success' : 'danger';
   }
 
-  formatDate(dateString: Date): string {
-    return new Date(dateString).toLocaleString();
+  formatDate(dateValue: Date | string | undefined | null): string {
+    if (!dateValue) {
+      return 'N/A';
+    }
+
+    return new Date(dateValue).toLocaleString();
   }
 
   refreshTransactions() {
