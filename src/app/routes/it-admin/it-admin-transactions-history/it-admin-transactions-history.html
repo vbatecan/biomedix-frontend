@@ -40,6 +40,7 @@
       <p-table
         [value]="transactions()"
         [loading]="loading()"
+        [paginator]="true"
         [rows]="pageSize()"
         [totalRecords]="totalRecords()"
         [rowsPerPageOptions]="pageSizeOptions"
@@ -51,10 +52,10 @@
           <tr>
             <th pSortableColumn="id">ID <p-sortIcon field="id"></p-sortIcon></th>
             <th pSortableColumn="user.face_name">User <p-sortIcon field="user.face_name"></p-sortIcon></th>
-            <th pSortableColumn="transaction_detail.medicine.name">Medicine <p-sortIcon field="transaction_detail.medicine.name"></p-sortIcon></th>
-            <th pSortableColumn="transaction_detail.quantity">Quantity <p-sortIcon field="transaction_detail.quantity"></p-sortIcon></th>
+            <th>Medicine</th>
+            <th>Quantity</th>
             <th pSortableColumn="mode">Type <p-sortIcon field="mode"></p-sortIcon></th>
-            <th pSortableColumn="created_at">Date <p-sortIcon field="created_at"></p-sortIcon></th>
+            <th pSortableColumn="transaction_date">Date <p-sortIcon field="transaction_date"></p-sortIcon></th>
           </tr>
         </ng-template>
 
@@ -63,18 +64,34 @@
             <td>{{ transaction.id || 'N/A' }}</td>
             <td>
               <div class="user-info">
-                <div class="user-name">{{ transaction.user.face_name }}</div>
-                <div class="user-email">{{ transaction.user.email }}</div>
+                <div class="user-name">{{ transaction.user?.face_name || 'Unknown user' }}</div>
+                <div class="user-email">{{ transaction.user?.email || 'N/A' }}</div>
               </div>
             </td>
             <td>
-              <div class="medicine-info">
-                <div class="medicine-name">{{ transaction.transaction_detail.medicine.name }}</div>
-                <div class="medicine-description">{{ transaction.transaction_detail.medicine.description }}</div>
-              </div>
+              @if (transaction.transaction_details?.length) {
+                <div class="medicine-info">
+                  @for (detail of transaction.transaction_details; track detail.id) {
+                    <div class="medicine-name">{{ detail.medicine?.name || 'Unknown medicine' }}</div>
+                    <div class="medicine-description">{{ detail.medicine?.description || 'No description' }}</div>
+                  }
+                </div>
+              } @else {
+                <div class="medicine-info">
+                  <div class="medicine-name">N/A</div>
+                </div>
+              }
             </td>
             <td>
-              <span class="quantity-badge">{{ transaction.transaction_detail.quantity }}</span>
+              @if (transaction.transaction_details?.length) {
+                <div class="quantity-list">
+                  @for (detail of transaction.transaction_details; track detail.id) {
+                    <span class="quantity-badge">{{ detail.quantity }}</span>
+                  }
+                </div>
+              } @else {
+                <span class="quantity-badge">N/A</span>
+              }
             </td>
             <td>
               <p-tag
@@ -85,7 +102,7 @@
             </td>
             <td>
               <div class="date-info">
-                <div class="date-primary">{{ formatDate(transaction.created_at) }}</div>
+                <div class="date-primary">{{ formatDate(transaction.transaction_date || transaction.created_at) }}</div>
               </div>
             </td>
           </tr>
